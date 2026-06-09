@@ -82,19 +82,80 @@ def eliminar_paciente(id_paciente):
     finally:
         conexion.close()
 
+## ==========================================
+# 3. FUNCIÓN PARA CREAR ORDENEISHONS
+## ==========================================
 
+def crear_orden(id_paciente):
+    """
+    Crea una nueva orden de trabajo para un paciente existente,
+    registrando la fecha y hora exacta de forma automática.
+    """
+    try:
+        conexion = sqlite3.connect("castlab.db")
+        dedo_lector = conexion.cursor()
+        
+        # Activamos las claves foráneas por seguridad
+        dedo_lector.execute("PRAGMA foreign_keys = ON;")
+        
+        # 1. Capturamos la fecha y hora actual del sistema
+        # datetime.now() nos da un objeto con el segundo exacto.
+        # .strftime("%Y-%m-%d %H:%M:%S") lo transforma en un texto limpio: "2026-06-08 19:15:30"
+        fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Todas las órdenes nuevas nacen con el estado 'Pendiente'
+        estado_inicial = "Pendiente"
+        
+        # 2. Preparamos el SQL. Nota que no insertamos 'id_orden' porque es autoincremental
+        sql = """
+        INSERT INTO ordenes (id_paciente, fecha, estado)
+        VALUES (?, ?, ?)
+        """
+        
+        dedo_lector.execute(sql, (id_paciente, fecha_actual, estado_inicial))
+        conexion.commit()
+        
+        # 3. SQLite nos permite saber cuál fue el número de ID que se generó automáticamente
+        # para esta última orden usando 'lastrowid'
+        id_orden_generada = dedo_lector.lastrowid
+        
+        print(f"   [ÉXITO] Orden N° {id_orden_generada} creada para el Paciente ID {id_paciente} el {fecha_actual}.")
+        
+        # Devolvemos el número de orden porque lo necesitaremos para el siguiente paso: meter los exámenes
+        return id_orden_generada
+        
+    except sqlite3.IntegrityError:
+        # Este error salta si intentas crear una orden para un id_paciente que NO existe en el sistema
+        print(f"   [ERROR] No se puede crear la orden. El Paciente ID {id_paciente} no existe.")
+    except sqlite3.Error as e:
+        print(f"   [ERROR CRÍTICO] No se pudo crear la orden: {e}")
+    finally:
+        conexion.close()
+        
 # ==========================================
 # BLOQUE DE PRUEBAS DE CASOS DE USO
 # ==========================================
+
 if __name__ == "__main__":
-    print("--- EJECUTANDO PRUEBAS DE CASOS DE USO ---")
+    print("--- PROBANDO CREACIÓN DE ÓRDENES EN CASTLAB ---")
+    
+    # Simulamos que viene el Paciente ID 1 (Juan) y le creamos una orden
+    id_nueva_orden = crear_orden(1)
+    
+    # Simulamos un error a propósito: intentamos crear una orden para el paciente ID 99 (que no existe)
+    # Gracias a las claves foráneas que programamos, la base de datos debería rechazarlo
+    crear_orden(99)
+
+
+# if __name__ == "__main__":
+    # print("--- EJECUTANDO PRUEBAS DE CASOS DE USO ---")
     
     # 1. Registramos un tercer paciente de prueba
-    registrar_paciente("V-99999999", "Carlos", "Silva", 40, "M")
+    # registrar_paciente("V-99999999", "Carlos", "Silva", 40, "M")
     
     # 2. Vamos a simular que Carlos cumplió años y se cambió el apellido.
     # Como es el tercer paciente, asumimos que su id_paciente es el 3.
-    modificar_paciente(3, 41, "Silva Uzcátegui")
+    # modificar_paciente(3, 41, "Silva Uzcátegui")
     
     # 3. Prueba de eliminación: Si quisieras borrarlo, descomenta la línea de abajo borrando el '#'
     #eliminar_paciente(3)
