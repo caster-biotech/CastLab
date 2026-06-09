@@ -38,7 +38,7 @@ def inicializar_base_de_datos():
         CREATE TABLE IF NOT EXISTS resultados (
             id_resultado INTEGER PRIMARY KEY AUTOINCREMENT,
             id_orden INTEGER NOT NULL,
-            examen_nombre TEXT NOT NULL,
+            nombre_examen TEXT NOT NULL,
             parametro TEXT NOT NULL,
             valor_resultado TEXT,
             unidad TEXT,

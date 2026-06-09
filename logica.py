@@ -131,31 +131,58 @@ def crear_orden(id_paciente):
         print(f"   [ERROR CRÍTICO] No se pudo crear la orden: {e}")
     finally:
         conexion.close()
+
+# ==========================================
+# 4. FUNCIÓN PARA REGISTRAR RESULTADOS DE EXÁMENES
+# ==========================================
+
+def registrar_resultado(id_orden, nombre_examen, valor_resultado="En proceso", parametro="General"):
+    """
+    Vincula un examen específico a una orden de trabajo existente.
+    """
+    try:
+        conexion = sqlite3.connect("castlab.db")
+        dedo_lector = conexion.cursor()
         
+        dedo_lector.execute("PRAGMA foreign_keys = ON;")
+        
+        # Copia esto tal cual: Tabla 'resultados', columnas correspondientes
+        sql = """
+        INSERT INTO resultados (id_orden, nombre_examen, valor_resultado, parametro)
+        VALUES (?, ?, ?, ?)
+        """
+        
+        dedo_lector.execute(sql, (id_orden, nombre_examen, valor_resultado, parametro))
+        conexion.commit()
+        print(f"   [ÉXITO] Examen '{nombre_examen}' agregado a la Orden N° {id_orden} ({valor_resultado}).")
+        
+    except sqlite3.IntegrityError as e:
+        # Ahora el cartel nos dirá el motivo REAL del error de integridad
+        print(f"   [ERROR DE INTEGRIDAD REAL]: {e}")
+    except sqlite3.Error as e:
+        print(f"   [ERROR CRÍTICO] No se pudo registrar el resultado: {e}")
+    finally:
+        conexion.close()
+
 # ==========================================
 # BLOQUE DE PRUEBAS DE CASOS DE USO
 # ==========================================
 
 if __name__ == "__main__":
-    print("--- PROBANDO CREACIÓN DE ÓRDENES EN CASTLAB ---")
+    print("--- SIMULANDO FLUJO FELIZ COMPLETO EN CASTLAB ---")
     
-    # Simulamos que viene el Paciente ID 1 (Juan) y le creamos una orden
-    id_nueva_orden = crear_orden(1)
+    print("\n--- PASO 1: Registrando Paciente Inicial ---")
+    registrar_paciente("V-88888888", "Daniel", "Acabal", 35, "M")
     
-    # Simulamos un error a propósito: intentamos crear una orden para el paciente ID 99 (que no existe)
-    # Gracias a las claves foráneas que programamos, la base de datos debería rechazarlo
-    crear_orden(99)
-
-
-# if __name__ == "__main__":
-    # print("--- EJECUTANDO PRUEBAS DE CASOS DE USO ---")
+    id_paciente_prueba = 1  
     
-    # 1. Registramos un tercer paciente de prueba
-    # registrar_paciente("V-99999999", "Carlos", "Silva", 40, "M")
+    print(f"\n--- PASO 2: Creando Orden de Trabajo para el ID {id_paciente_prueba} ---")
+    # IMPORTANTE: Tu función crear_orden DEBE tener un 'return' al final que devuelva el ID creado
+    orden_generada = crear_orden(id_paciente_prueba)
     
-    # 2. Vamos a simular que Carlos cumplió años y se cambió el apellido.
-    # Como es el tercer paciente, asumimos que su id_paciente es el 3.
-    # modificar_paciente(3, 41, "Silva Uzcátegui")
+    print(f"Valor de orden_generada en Python: {orden_generada}") # Agrega este print para espiar qué está llegando
     
-    # 3. Prueba de eliminación: Si quisieras borrarlo, descomenta la línea de abajo borrando el '#'
-    #eliminar_paciente(3)
+    if orden_generada:
+        print("\n--- PASO 3: Cargando Exámenes a la Orden ---")
+        registrar_resultado(orden_generada, "Hematología Completa")
+        registrar_resultado(orden_generada, "Glicemia", "105 mg/dL")
