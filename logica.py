@@ -165,22 +165,57 @@ def registrar_resultado(id_orden, nombre_examen, valor_resultado="En proceso", p
         conexion.close()
 
 # ==========================================
+# 5. FUNCIÓN PARA BUSCAR PACIENTES POR CÉDULA (ÚTIL PARA PRUEBAS)
+# ==========================================
+
+def buscar_paciente_por_cedula(cedula):
+    """
+    Busca un paciente en la base de datos por su número de cédula.
+    Devuelve los datos del paciente si existe, o None si no lo encuentra.
+    """
+    try:
+        conexion = sqlite3.connect("castlab.db")
+        dedo_lector = conexion.cursor()
+        
+        # El comando SELECT le dice: "Trae todos los campos (*) de la tabla pacientes
+        # pero FILTRA donde la cédula sea igual a la que te estoy pasando"
+        sql = "SELECT * FROM pacientes WHERE cedula = ?"
+        
+        dedo_lector.execute(sql, (cedula,))
+        
+        # fetchone() es el comando que le dice a Python: "Tráeme la primera fila que encuentres"
+        paciente = dedo_lector.fetchone()
+        
+        return paciente # Devuelve la tupla con los datos (ej. ('V-88888888', 'Daniel', ...))
+        
+    except sqlite3.Error as e:
+        print(f"   [ERROR CRÍTICO] Error al buscar paciente: {e}")
+        return None
+    finally:
+        conexion.close()
+# ==========================================
 # BLOQUE DE PRUEBAS DE CASOS DE USO
 # ==========================================
 
 if __name__ == "__main__":
     print("--- SIMULANDO FLUJO FELIZ COMPLETO EN CASTLAB ---")
     
-    print("\n--- PASO 1: Registrando Paciente Inicial ---")
-    registrar_paciente("V-88888888", "Daniel", "Acabal", 35, "M")
+    print("\n--- PASO 1: Registrando / Verificando Paciente ---")
+    cedula_prueba = "V-88888888"
     
-    id_paciente_prueba = 1  
+    # Antes de registrar a lo loco, el sistema primero BUSCA
+    paciente_encontrado = buscar_paciente_por_cedula(cedula_prueba)
     
+    if paciente_encontrado:
+        print(f"   [SISTEMA] El paciente ya existe en los archivos: {paciente_encontrado[1]} {paciente_encontrado[2]}")
+        id_paciente_prueba = 1 # Ya sabemos que Daniel es el 1
+    else:
+        print("   [SISTEMA] Paciente nuevo. Registrando en la base de datos...")
+        registrar_paciente(cedula_prueba, "Daniel", "Acabal", 35, "M")
+        id_paciente_prueba = 1
+        
     print(f"\n--- PASO 2: Creando Orden de Trabajo para el ID {id_paciente_prueba} ---")
-    # IMPORTANTE: Tu función crear_orden DEBE tener un 'return' al final que devuelva el ID creado
     orden_generada = crear_orden(id_paciente_prueba)
-    
-    print(f"Valor de orden_generada en Python: {orden_generada}") # Agrega este print para espiar qué está llegando
     
     if orden_generada:
         print("\n--- PASO 3: Cargando Exámenes a la Orden ---")
