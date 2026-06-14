@@ -193,31 +193,114 @@ def buscar_paciente_por_cedula(cedula):
         return None
     finally:
         conexion.close()
+
+# ==========================================
+# 6. FUNCIÓN PARA ACTUALIZAR RESULTADOS DE EXÁMENES 
+# ==========================================
+
+def actualizar_resultado(id_resultado, nuevo_valor):
+    """
+    Actualiza el valor de un examen específico y cambia su estado a 'Listo'.
+    """
+    try:
+        conexion = sqlite3.connect("castlab.db")
+        cursor = conexion.cursor()
+        
+        # El plano del cambio: Modifica la tabla resultados,
+        # cambia el valor y el estado, pero SOLO para ese ID.
+        sql = """
+            UPDATE resultados 
+            SET valor_resultado = ?, parametro = 'Listo' 
+            WHERE id_resultado = ?
+        """
+        
+        # Pasamos los datos en el mismo orden de los signos de interrogación
+        cursor.execute(sql, (nuevo_valor, id_resultado))
+        
+        # Como estamos ALTERANDO el archivo físico, necesitamos el commit
+        conexion.commit()
+        print(f"   [ÉXITO] Resultado ID {id_resultado} actualizado a: {nuevo_valor}")
+        return True
+        
+    except sqlite3.Error as e:
+        print(f"   [ERROR CRÍTICO] No se pudo actualizar el resultado: {e}")
+        return False
+    finally:
+        conexion.close()
+
+
+# ==========================================
+# 7. FUNCIÓN PARA VALIDAR ORDENES
+# ==========================================
+
+def validar_orden(id_orden):
+    """
+    Cambia el estado de una orden completa a 'Validada', 
+    lo que significa que todos sus exámenes están listos para entrega.
+    """
+    try:
+        conexion = sqlite3.connect("castlab.db")
+        cursor = conexion.cursor()
+        
+        # El plano: Modifica la tabla ordenes, cambia el estado,
+        # pero SOLO para esa orden específica.
+        sql = """
+            UPDATE ordenes 
+            SET estado = 'Validada' 
+            WHERE id_orden = ?
+        """
+        
+        cursor.execute(sql, (id_orden,))
+        conexion.commit()
+        
+        print(f"   [SISTEMA] Orden N° {id_orden} ha sido VALIDADA COMPLETAMENTE para entrega.")
+        return True
+        
+    except sqlite3.Error as e:
+        print(f"   [ERROR CRÍTICO] No se pudo validar la orden: {e}")
+        return False
+    finally:
+        conexion.close()
+
+
 # ==========================================
 # BLOQUE DE PRUEBAS DE CASOS DE USO
 # ==========================================
 
 if __name__ == "__main__":
-    print("--- SIMULANDO FLUJO FELIZ COMPLETO EN CASTLAB ---")
+    print("=== SIMULANDO UN DÍA REAL EN CASTLAB (14 DE JUNIO) ===")
     
-    print("\n--- PASO 1: Registrando / Verificando Paciente ---")
-    cedula_prueba = "V-88888888"
+    # 1. RECEPCIÓN: Llega el paciente y lo buscamos/registramos
+    cedula_paciente = "V-88888888"
+    paciente = buscar_paciente_por_cedula(cedula_paciente)
     
-    # Antes de registrar a lo loco, el sistema primero BUSCA
-    paciente_encontrado = buscar_paciente_por_cedula(cedula_prueba)
-    
-    if paciente_encontrado:
-        print(f"   [SISTEMA] El paciente ya existe en los archivos: {paciente_encontrado[1]} {paciente_encontrado[2]}")
-        id_paciente_prueba = 1 # Ya sabemos que Daniel es el 1
+    if paciente:
+        print(f"   [RECEPCIÓN] Paciente encontrado: {paciente[2]} {paciente[3]}")
+        id_paciente_real = paciente[0]
     else:
-        print("   [SISTEMA] Paciente nuevo. Registrando en la base de datos...")
-        registrar_paciente(cedula_prueba, "Daniel", "Acabal", 35, "M")
-        id_paciente_prueba = 1
-        
-    print(f"\n--- PASO 2: Creando Orden de Trabajo para el ID {id_paciente_prueba} ---")
-    orden_generada = crear_orden(id_paciente_prueba)
+        print("   [RECEPCIÓN] Paciente nuevo. Registrando...")
+        # Si no existiera, lo registramos aquí
+        id_paciente_real = 1 
+
+    # 2. FACTURACIÓN: Se genera la orden de trabajo
+    print("\n--- PASO 2: Generando orden de trabajo ---")
+    id_orden_nueva = crear_orden(id_paciente_real)
     
-    if orden_generada:
-        print("\n--- PASO 3: Cargando Exámenes a la Orden ---")
-        registrar_resultado(orden_generada, "Hematología Completa")
-        registrar_resultado(orden_generada, "Glicemia", "105 mg/dL")
+    if id_orden_nueva:
+        # 3. RECEPCIÓN: Se le cargan los exámenes solicitados (nacen "En proceso")
+        print("\n--- PASO 3: Cargando exámenes solicitados ---")
+        registrar_resultado(id_orden_nueva, "Glicemia")
+        # Imaginemos que el sistema nos asigna el ID de examen 1 para esta prueba
+        
+        # 4. ÁREA TÉCNICA: El bioanalista monta la muestra y carga el resultado
+        print("\n--- PASO 4: Área Técnica procesa la muestra ---")
+        id_examen_glicemia = 1 
+        actualizar_resultado(id_examen_glicemia, "104 mg/dL")
+        
+        # 5. VALIDACIÓN: Como ya están listos los exámenes, se sella la orden completa
+        print("\n--- PASO 5: Control de Calidad / Validación Final ---")
+        validar_orden(id_orden_nueva)
+
+    print("\n=== FIN DE LA SIMULACIÓN DE HOY ===")
+
+    
