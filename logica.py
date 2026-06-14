@@ -262,7 +262,35 @@ def validar_orden(id_orden):
     finally:
         conexion.close()
 
+# ==========================================
+# 8. FUNCIÓN PARA ANULAR ORDENES
+# ==========================================
 
+
+def anular_orden(id_orden):
+    """
+    Elimina una orden de la base de datos de forma definitiva.
+    Por configuración de cascada, esto borrará también todos sus exámenes asociados.
+    """
+    try: 
+        conexion = sqlite3.connect("castlab.db")
+        cursor = conexion.cursor()
+
+        sql = "DELETE FROM ordenes WHERE id_orden = ?"
+
+        cursor.execute(sql, (id_orden,))
+        conexion.commit()
+
+        print(f"¨[SISTEMA] Orden N° {id_orden} ha sido anulada y eliminada con exito (y sus examenes tambien, en cascada)")
+        return True
+    
+    except sqlite3.Error as e:
+        print(f" [ERROR CRITICO] No se pudo anular la orden por: {e}")
+        return False
+    finally:     
+        conexion.close()
+
+        
 # ==========================================
 # BLOQUE DE PRUEBAS DE CASOS DE USO
 # ==========================================
@@ -303,4 +331,7 @@ if __name__ == "__main__":
 
     print("\n=== FIN DE LA SIMULACIÓN DE HOY ===")
 
-    
+    # 6. ERROR HUMANO: Nos damos cuenta de que la orden era de otro paciente. ¡La anulamos!
+print("\n--- PASO 6: Se detecta error y se anula la orden ---")
+anular_orden(id_orden_nueva)
+
