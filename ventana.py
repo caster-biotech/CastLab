@@ -1,54 +1,125 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel
-# Importamos TU motor de búsqueda del backend
-from logica import buscar_paciente_por_cedula
+from logica import registrar_paciente
 
-class VentanaCastLab(QWidget):
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QFormLayout, 
+    QLineEdit, QDateEdit, QComboBox, QPushButton, QLabel, QMessageBox
+)
+from PyQt6.QtCore import QDate
+
+class VentanaRecepcion(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CastLab - Módulo de Recepción (Tráiler)")
-        self.setGeometry(500, 100, 800, 150)
+        # 1. Configuración básica de la ventana
+        self.setWindowTitle("CastLab - Registro de Pacientes")
+        self.setMinimumWidth(450)
         
-        # Diseño Principal Vertical
-        diseno_vertical = QVBoxLayout()
+        # 2. Creamos el Layout Principal (Vertical)
+        self.layout_principal = QVBoxLayout()
+        self.setLayout(self.layout_principal)
         
-        # Diseño Horizontal para la búsqueda
-        diseno_busqueda = QHBoxLayout()
+        # 3. Título visual en la parte superior
+        self.etiqueta_titulo = QLabel("REGISTRO DE NUEVO PACIENTE")
+        self.etiqueta_titulo.setStyleSheet("font-size: 20px; font-weight: bold; color: #3b82f6; margin-bottom: 10px;")
+        self.layout_principal.addWidget(self.etiqueta_titulo)
+        
+        # 4. Creamos el Formulario (Layout de dos columnas)
+        self.formulario = QFormLayout()
+        self.layout_principal.addLayout(self.formulario)
+        
+        # --- CAMPOS DEL FORMULARIO ---
+        
+        # Cédula
         self.caja_cedula = QLineEdit()
-        self.caja_cedula.setPlaceholderText("Ingrese cédula (Ej: V-88888888)")
-        self.boton_buscar = QPushButton("Buscar Paciente")
+        self.caja_cedula.setPlaceholderText("Ej: V-12345678")
+        self.formulario.addRow("Cédula:", self.caja_cedula)
         
-        diseno_busqueda.addWidget(self.caja_cedula)
-        diseno_busqueda.addWidget(self.boton_buscar)
+        # Nombre
+        self.caja_nombre = QLineEdit()
+        self.formulario.addRow("Nombre:", self.caja_nombre)
         
-        # Etiqueta para mostrar el resultado en la pantalla
-        self.etiqueta_resultado = QLabel("Monitoreo del sistema: Esperando búsqueda...")
-        self.etiqueta_resultado.setStyleSheet("font-size: 14px; color: blue; font-weight: bold;")
+        # Apellido
+        self.caja_apellido = QLineEdit()
+        self.formulario.addRow("Apellido:", self.caja_apellido)
         
-        # Unimos los Legos visuales
-        diseno_vertical.addLayout(diseno_busqueda)
-        diseno_vertical.addWidget(self.etiqueta_resultado)
-        self.setLayout(diseno_vertical)
+        # Fecha de Nacimiento (Componente Inteligente)
+        self.caja_fecha_nac = QDateEdit()
+        self.caja_fecha_nac.setCalendarPopup(True) # Activa el calendario desplegable
+        self.caja_fecha_nac.setMaximumDate(QDate.currentDate()) # No permite fechas futuras
+        self.caja_fecha_nac.setDate(QDate(2000, 1, 1)) # Fecha por defecto
+        self.formulario.addRow("F. Nacimiento:", self.caja_fecha_nac)
         
-        # Conectamos el botón visual con nuestra lógica real del backend
-        self.boton_buscar.clicked.connect(self.ejecutar_busqueda_visual)
+        # Sexo (Menú Desplegable)
+        self.combo_sexo = QComboBox()
+        self.combo_sexo.addItems(["Masculino", "Femenino"])
+        self.formulario.addRow("Sexo:", self.combo_sexo)
+        
+        # 5. Botón de Registro
+        self.boton_registrar = QPushButton("REGISTRAR PACIENTE")
+        self.boton_registrar.setStyleSheet("""
+            QPushButton {
+                background-color: #2563eb;
+                color: white;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 5px;
+                margin-top: 20px;
+            }
+            QPushButton:hover {
+                background-color: #1d4ed8;
+            }
+        """)
+        # Conectamos el clic del botón a nuestra función lógica
+        self.boton_registrar.clicked.connect(self.ejecutar_registro)
+        self.layout_principal.addWidget(self.boton_registrar)
 
-    def ejecutar_busqueda_visual(self):
-        cedula_ingresada = self.caja_cedula.text()
+    def ejecutar_registro(self):
+        # 1. Extraemos los textos de la pantalla
+        cedula = self.caja_cedula.text().strip()
+        nombre = self.caja_nombre.text().strip()
+        apellido = self.caja_apellido.text().strip()
+        sexo = self.combo_sexo.currentText()
         
-        # Llamamos a tu función del backend pasándole lo que el usuario escribió en la pantalla
-        paciente = buscar_paciente_por_cedula(cedula_ingresada)
+        # 2. Validación de seguridad básica
+        if not cedula or not nombre or not apellido:
+            QMessageBox.warning(self, "Campos Vacíos", "Por favor, llene Cédula, Nombre y Apellido.")
+            return
+
+        # 3. MÁGIA MATEMÁTICA TEMPORAL: Calcular edad basándonos en el año
+        año_nacimiento = self.caja_fecha_nac.date().year()
+        año_actual = QDate.currentDate().year()
+        edad_calculada = año_actual - año_nacimiento
+
+        # 4. LLAMADA AL BACKEND REAL
+        # Enviamos los datos directos a la función de tu archivo logica.py
+        exito = registrar_paciente(cedula, nombre, apellido, edad_calculada, sexo)
+
+        print(f"--- ESPÍA: Lo que recibió la ventana fue: {exito} ---")
         
-        if paciente:
-            # paciente[1] es el nombre, paciente[2] es el apellido en tu tupla
-            self.etiqueta_resultado.setText(f"✅ PACIENTE ENCONTRADO:\n{paciente[2]} {paciente[3]} (Edad: {paciente[4]})")
-            self.etiqueta_resultado.setStyleSheet("color: green; font-size: 14px;")
+        # 5. Respuesta visual al usuario
+        if exito:
+            QMessageBox.information(self, "Éxito", f"¡Paciente {nombre} {apellido} guardado en la Base de Datos!")
+            
+            # Limpiamos las cajas para el siguiente paciente
+            self.caja_cedula.clear()
+            self.caja_nombre.clear()
+            self.caja_apellido.clear()
+            self.caja_fecha_nac.setDate(QDate(2000, 1, 1))
         else:
-            self.etiqueta_resultado.setText("❌ El paciente no existe en la base de datos.")
-            self.etiqueta_resultado.setStyleSheet("color: red; font-size: 14px;")
-
+            QMessageBox.critical(self, "Error", "No se pudo registrar. Posiblemente la cédula ya existe.")
+    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ventana = VentanaCastLab()
+    ventana = VentanaRecepcion()
     ventana.show()
     sys.exit(app.exec())
+
+### Explicación rápida de las líneas clave:
+
+### 1.  **`QFormLayout`**: Es el que hace el trabajo sucio de poner la etiqueta (ej: "Cédula:") al lado de la caja de texto. Si usáramos `QVBoxLayout`, saldría uno arriba del otro.
+### 2.  **`setCalendarPopup(True)`**: Esta es la línea mágica. Sin ella, el usuario tendría que escribir la fecha con los numeritos. Con ella, sale el calendario de Windows/Mac.
+### 3.  **`setMaximumDate(QDate.currentDate())`**: Es el **Guardián Visual**. Evita que alguien registre a un paciente nacido en el año 2030.
+### 4.  **`setStyleSheet`**: Aquí es donde aplicas tu conocimiento de CSS. Fíjate que la sintaxis es casi idéntica: `background-color`, `border-radius`, `padding`.
+### 5.  **`self.boton_registrar.clicked.connect(...)`**: Es el cable. Le dice al botón: "Cuando te toquen, corre a buscar la función `ejecutar_registro`". ###
+
+# Qué te parece este diseño? Si lo ejecutas ahora mismo, verás una ventana profesional, azul y gris, lista para recibir pacientes. Pruébalo y dime si el calendario funciona como esperabas. ¡A por ello!
