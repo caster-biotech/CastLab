@@ -1,0 +1,19 @@
+# Entornos virtuales (Evita subir gigabytes de librerías)
+.venv/
+venv/
+ENV/
+
+# Bases de datos locales (¡CRÍTICO! Protege tus datos del LIMS)
+*.db
+*.sqlite3
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos ocultos del sistema o carpetas de pruebas locales
+.test/
+.DS_Store
+Thumbs.db
