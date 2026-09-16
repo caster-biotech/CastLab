@@ -17,3 +17,11 @@ __pycache__/
 .test/
 .DS_Store
 Thumbs.db
+
+# Archivos de caché e índices WAL de SQLite
+*.db-wal
+*.db-shm
+
+# Ignorar bases de datos en cualquier ubicación (incluyendo legacy)
+*.db
+*.sqlite3

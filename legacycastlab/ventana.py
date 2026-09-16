@@ -94,7 +94,7 @@ class VentanaRecepcion(QWidget):
         # Enviamos los datos directos a la función de tu archivo logica.py
         exito = registrar_paciente(cedula, nombre, apellido, edad_calculada, sexo)
 
-        print(f"--- ESPÍA: Lo que recibió la ventana fue: {exito} ---")
+        print(f"--- ESPÍA: Lo que recibió la ventana fue: {exito} ---")  #Para ver errores en la consola si no comunica bien con la base de datos
         
         # 5. Respuesta visual al usuario
         if exito:
