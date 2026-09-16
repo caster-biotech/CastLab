@@ -32,7 +32,9 @@ class ResultRepository(ABC):
     def get_by_id(self, result_id: int) -> Optional[Result]:
         pass
 
+from citadel.core.models.audit import Audit
+
 class AuditRepository(ABC):
     @abstractmethod
-    def log_action(self, action: str, details: str) -> None:
+    def add(self, audit: Audit) -> Audit:
         pass

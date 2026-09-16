@@ -288,3 +288,27 @@ class AuditModel(SQLModel, table=True):
     change_reason: Optional[str] = None
     modified_by_user_id: int = Field(foreign_key="users.user_id")
     modified_at: datetime = Field(default_factory=datetime.now)
+
+    def to_domain(self):
+        from citadel.core.models.audit import Audit
+        return Audit(
+            audit_id=self.audit_id,
+            result_id=self.result_id,
+            previous_value=self.previous_value,
+            new_value=self.new_value,
+            change_reason=self.change_reason,
+            modified_by_user_id=self.modified_by_user_id,
+            modified_at=self.modified_at
+        )
+
+    @classmethod
+    def from_domain(cls, audit) -> "AuditModel":
+        return cls(
+            audit_id=audit.audit_id,
+            result_id=audit.result_id,
+            previous_value=audit.previous_value,
+            new_value=audit.new_value,
+            change_reason=audit.change_reason,
+            modified_by_user_id=audit.modified_by_user_id,
+            modified_at=audit.modified_at
+        )
