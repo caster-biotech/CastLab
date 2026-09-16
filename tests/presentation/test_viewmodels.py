@@ -15,9 +15,10 @@ class SignalCatcher:
 
 def test_sample_viewmodel_validation_success():
     mock_service = MagicMock()
+    mock_patient_service = MagicMock()
     mock_service.validate_result.return_value = "VALIDATED_RESULT"
     
-    vm = SampleViewModel(mock_service)
+    vm = SampleViewModel(mock_service, mock_patient_service)
     catcher = SignalCatcher()
     vm.result_validated.connect(catcher.catch)
     
@@ -28,9 +29,10 @@ def test_sample_viewmodel_validation_success():
 
 def test_sample_viewmodel_validation_error():
     mock_service = MagicMock()
+    mock_patient_service = MagicMock()
     mock_service.validate_result.side_effect = UnauthorizedRoleError("Only Bioanalist can validate")
     
-    vm = SampleViewModel(mock_service)
+    vm = SampleViewModel(mock_service, mock_patient_service)
     catcher = SignalCatcher()
     vm.error_occurred.connect(catcher.catch)
     

@@ -1,20 +1,34 @@
 from PyQt6.QtCore import QObject, pyqtSignal
 from citadel.application.sample_service import SampleService
+from citadel.application.patient_service import PatientService
 from citadel.core.models.enums import OrderOrigin
+import datetime
 
 class SampleViewModel(QObject):
     order_created = pyqtSignal(object, list)
     result_updated = pyqtSignal(object)
     result_validated = pyqtSignal(object)
+    patient_found = pyqtSignal(object)
     error_occurred = pyqtSignal(str)
 
-    def __init__(self, sample_service: SampleService):
+    def __init__(self, sample_service: SampleService, patient_service: PatientService):
         super().__init__()
         self.sample_service = sample_service
+        self.patient_service = patient_service
 
-    def create_order(self, patient_id: int, physician: str, origin: OrderOrigin, test_ids: list[int]):
+    def lookup_patient(self, national_id: str):
         try:
-            order, samples = self.sample_service.create_order_with_samples(patient_id, physician, origin, test_ids)
+            patient_data = {"national_id": national_id, "first_name": "Unknown", "last_name": "Unknown", "birth_date": datetime.date(2000, 1, 1), "sex": "OTHER"}
+            patient = self.patient_service.register_or_get_patient(patient_data)
+            self.patient_found.emit(patient)
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+    def create_order(self, national_id: str, physician: str, origin: OrderOrigin, test_ids: list[int]):
+        try:
+            patient_data = {"national_id": national_id, "first_name": "Unknown", "last_name": "Unknown", "birth_date": datetime.date(2000, 1, 1), "sex": "OTHER"}
+            patient = self.patient_service.register_or_get_patient(patient_data)
+            order, samples = self.sample_service.create_order_with_samples(patient.patient_id, physician, origin, test_ids)
             self.order_created.emit(order, samples)
         except Exception as e:
             self.error_occurred.emit(str(e))
